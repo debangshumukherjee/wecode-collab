@@ -44,7 +44,7 @@ cd wecode-colab
 Navigate to the backend directory and install dependencies:
 ```bash
 cd backend
-npm install
+npm init -y
 ```
 
 Start the backend server:
