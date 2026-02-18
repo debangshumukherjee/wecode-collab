@@ -7,6 +7,8 @@ const Home = () => {
     const navigate = useNavigate();
     const [roomId, setRoomId] = useState('');
     const [username, setUsername] = useState('');
+    // NEW: Email state for Video Calling
+    const [email, setEmail] = useState(''); 
 
     const createNewRoom = (e) => {
         e.preventDefault();
@@ -16,12 +18,14 @@ const Home = () => {
     };
 
     const joinRoom = () => {
-        if (!roomId || !username) {
-            toast.error('ROOM ID & username is required');
+        // NEW: Check if email is filled out
+        if (!roomId || !username || !email) {
+            toast.error('Room ID, username & email are required');
             return;
         }
         navigate(`/editor/${roomId}`, {
-            state: { username },
+            // NEW: Pass email along with username to the editor
+            state: { username, email }, 
         });
     };
 
@@ -44,7 +48,7 @@ const Home = () => {
                     <img src="/wecode.png" alt="logo" className="h-[60px] md:h-[80px] drop-shadow-xl transition-transform hover:scale-105" />
                     <div className="text-center">
                         <p className="text-gray-400 text-xs md:text-sm mt-1">
-                            Real-time collaboration & remote execution
+                            Real-time collab, execution & video calls
                         </p>
                     </div>
                 </div>
@@ -75,6 +79,19 @@ const Home = () => {
                         />
                     </div>
 
+                    {/* NEW: Email Input Field */}
+                    <div className="group">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block tracking-wider">Email (For Video Call)</label>
+                        <input
+                            type="email"
+                            className="w-full bg-[#0a0c10] text-white p-3 rounded-lg border border-gray-700 focus:border-[#4aee88] focus:ring-1 focus:ring-[#4aee88] outline-none transition-all text-sm md:text-base placeholder-gray-600"
+                            placeholder="you@example.com"
+                            onChange={(e) => setEmail(e.target.value)}
+                            value={email}
+                            onKeyUp={handleInputEnter}
+                        />
+                    </div>
+
                     <button 
                         className="mt-2 w-full bg-[#4aee88] hover:bg-[#3ddc7c] text-black font-bold py-3 rounded-lg transition-all transform active:scale-95 hover:shadow-[0_0_15px_rgba(74,238,136,0.3)]"
                         onClick={joinRoom}
@@ -94,7 +111,7 @@ const Home = () => {
                 </div>
             </div>
             
-            {/* Footer - UPDATED */}
+            {/* Footer */}
             <footer className="absolute bottom-4 text-gray-500 text-[10px] md:text-xs text-center w-full px-4">
                 Built with ❤️ by &nbsp;
                 <a 

@@ -5,6 +5,7 @@ WeCode is a real-time collaborative code editor that allows developers to write,
 ## 🚀 Features
 
 -   **Real-time Collaboration**: Code comfortably with friends or colleagues in real-time using Socket.io.
+-   **Integrated Video & Audio Chat**: Communicate seamlessly with your team via built-in video and voice calling. Includes mute/video-off controls and a draggable interface.
 -   **Multi-language Support**: Write and execute code in JavaScript, Python, C++, and Java.
 -   **Secure Code Execution**: User code runs inside isolated Docker containers to ensure security and stability.
 -   **Instant Feedback**: View output and compilation errors instantly in the built-in terminal.
@@ -18,6 +19,7 @@ WeCode is a real-time collaborative code editor that allows developers to write,
 -   **Tailwind CSS** - Utility-first CSS framework for styling.
 -   **CodeMirror** - Versatile text editor component.
 -   **Socket.io Client** - Real-time bidirectional event-based communication.
+-   **WebRTC** - Peer-to-peer real-time communication for video/audio.
 -   **React Router** - Client-side routing.
 -   **React Hot Toast** - Elegant toast notifications.
 
@@ -86,7 +88,8 @@ PORT=5000
 2.  Enter a **Room ID** and your **Username** to join or create a room.
 3.  Share the Room ID with collaborators.
 4.  Write code in the editor, and see changes update instantly on all connected clients.
-5.  Click **Run** to execute the code and view the output.
+5.  Use the **Video Dock** to collaborate face-to-face.
+6.  Click **Run** to execute the code and view the output.
 
 ## 🛡️ Security
 
