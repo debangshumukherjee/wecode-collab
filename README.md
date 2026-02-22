@@ -86,7 +86,7 @@ npm run dev
 ## 🖥️ Usage
 
 1.  Open the frontend application in your browser.
-2.  Enter a unique **Room ID**, **Username**, and your **Email** (for avatar generation) to join.
+2.  Enter a unique **Room ID**, **Username**, and your **Email** to join.
 3.  Share the Room ID with your peers.
 4.  **Code Together**: Type in the editor and watch changes sync instantly.
 5.  **Talk Together**: Use the draggable Video Dock to see and hear your teammates.
