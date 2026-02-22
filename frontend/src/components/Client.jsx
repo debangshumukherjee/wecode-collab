@@ -1,5 +1,5 @@
 import React from 'react';
-import Avatar from 'react-avatar'; // We need to install this
+import Avatar from 'react-avatar';
 
 const Client = ({ username }) => {
     return (

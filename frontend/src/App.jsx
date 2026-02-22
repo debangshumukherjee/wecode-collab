@@ -6,7 +6,6 @@ import EditorPage from './pages/EditorPage';
 function App() {
     return (
         <>
-            {/* Toaster handles pop-up notifications */}
             <div className="fixed top-4 right-4 z-50">
                 <Toaster
                     position="top-right"

@@ -17,7 +17,7 @@ body, html {
   background-color: var(--bg-dark);
   color: #e0e0e0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  overflow: hidden; /* Prevent scrolling on the main page */
+  overflow: hidden;
 }
 
 /* Custom Scrollbar */
@@ -53,5 +53,5 @@ body, html {
 
 /* Full Screen Utility for Mobile */
 .h-dvh {
-  height: 100dvh; /* Dynamic viewport height */
+  height: 100dvh;
 }

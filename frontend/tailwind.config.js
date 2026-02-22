@@ -8,10 +8,10 @@ export default {
     extend: {
       colors: {
         dark: {
-          bg: '#0d1117',       // GitHub Dark Dimmed Background
-          panel: '#161b22',    // GitHub Dark Panel
-          border: '#30363d',   // GitHub Dark Border
-          text: '#c9d1d9',     // GitHub Dark Text
+          bg: '#0d1117',  
+          panel: '#161b22',
+          border: '#30363d',
+          text: '#c9d1d9',
         }
       }
     },

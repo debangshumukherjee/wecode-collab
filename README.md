@@ -1,42 +1,43 @@
 # WeCode - Real-time Collaborative Code Editor
 
-WeCode is a real-time collaborative code editor that allows developers to write, execute, and debug code together in the same environment. It supports multiple programming languages and provides a seamless coding experience with instant synchronization.
+WeCode is a powerful real-time collaborative code editor that enables developers to write, execute, and debug code together in a synchronized environment. It features instant code syncing and high-quality video/audio communication, making it perfect for pair programming, interviews, and remote teamwork.
 
 ## 🚀 Features
 
--   **Real-time Collaboration**: Code comfortably with friends or colleagues in real-time using Socket.io.
--   **Integrated Video & Audio Chat**: Communicate seamlessly with your team via built-in video and voice calling. Includes mute/video-off controls and a draggable interface.
--   **Multi-language Support**: Write and execute code in JavaScript, Python, C++, and Java.
--   **Secure Code Execution**: User code runs inside isolated Docker containers to ensure security and stability.
--   **Instant Feedback**: View output and compilation errors instantly in the built-in terminal.
--   **Room-based Access**: Create or join unique rooms to collaborate on specific projects.
--   **Responsive Design**: Built with Tailwind CSS for a clean and modern user interface.
+-   **Real-time Collaboration**: Code seamlessly with others using Socket.io for instant updates.
+-   **Integrated Video & Audio Chat**: Crystal-clear voice and video calling powered by **LiveKit** (WebRTC). Includes screen sharing, mute controls, and a draggable interface.
+-   **Multi-language Support**: Write and execute code in **JavaScript**, **Python**, **C++**, and **Java**.
+-   **Secure Code Execution**: User code is executed safely inside isolated **Docker** containers.
+-   **Instant Feedback**: View output and compilation errors immediately in the integrated terminal.
+-   **Room-based Access**: Create or join private rooms to collaborate on specific projects.
+-   **Modern UI**: A clean, dark-themed interface built with **React** and **Tailwind CSS**.
 
 ## 🛠️ Tech Stack
 
 ### Frontend
--   **React** (Vite) - Fast and modern UI library.
--   **Tailwind CSS** - Utility-first CSS framework for styling.
--   **CodeMirror** - Versatile text editor component.
--   **Socket.io Client** - Real-time bidirectional event-based communication.
--   **WebRTC** - Peer-to-peer real-time communication for video/audio.
--   **React Router** - Client-side routing.
--   **React Hot Toast** - Elegant toast notifications.
+-   **React** (Vite) - Fast and modular UI library.
+-   **Tailwind CSS** - Utility-first CSS framework for modern styling.
+-   **CodeMirror** - Professional text editor component with syntax highlighting.
+-   **LiveKit Client** - SDK for high-quality, scalable video & audio conferences.
+-   **Socket.io Client** - Real-time bidirectional communication for code updates.
+-   **React Hot Toast** - Elegant notification system.
 
 ### Backend
--   **Node.js & Express** - Scalable server-side runtime and framework.
--   **Socket.io** - Enables real-time, bi-directional communication.
--   **Docker** - Containerization for secure code execution.
+-   **Node.js & Express** - Robust server-side runtime and API framework.
+-   **Socket.io** - WebSocket server for managing collaboration events.
+-   **LiveKit Server SDK** - Handles video room management and secure token generation.
+-   **Docker** - Container platform for executing untrusted user code in isolation.
 
 ## ⚙️ Installation & Setup
 
 ### Prerequisites
 -   [Node.js](https://nodejs.org/) (v16 or higher)
--   [Docker](https://www.docker.com/) (Required for code execution features)
+-   [Docker](https://www.docker.com/) (Required for code execution)
+-   [LiveKit Account](https://livekit.io/) (Required for video/audio features)
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/debangshumukherjee/wecode-colab.git
+git clone https://github.com/debangshumukherjee/wecode.git
 cd wecode-colab
 ```
 
@@ -47,53 +48,56 @@ cd backend
 npm init -y
 ```
 
+Create a `.env` file in the `backend` folder and add your credentials:
+```env
+PORT=5000
+# Get these keys from your LiveKit Project Dashboard
+LIVEKIT_API_KEY=your_api_key
+LIVEKIT_API_SECRET=your_api_secret
+```
+
 Start the backend server:
 ```bash
 npm run dev
-# Server runs on http://localhost:5000 by default
+# Server runs on http://localhost:5000
 ```
-
-> **Note**: Ensure Docker is running on your machine for the code execution feature to work.
+> **Note**: Ensure Docker is running strictly for the code execution feature. The project works without Docker, but "Run Code" will fail.
 
 ### 3. Frontend Setup
-Open a new terminal, navigate to the frontend directory, and install dependencies:
+Navigate to the frontend directory and install dependencies:
 ```bash
 cd frontend
 npm install
 ```
 
+Create a `.env` file in the `frontend` folder:
+```env
+VITE_BACKEND_URL=http://localhost:5000
+# The WebSocket URL for your LiveKit project (e.g., wss://project-id.livekit.cloud)
+VITE_LIVEKIT_URL=wss://your-project.livekit.cloud
+```
+
 Start the frontend development server:
 ```bash
 npm run dev
-# Application usually runs on http://localhost:5173
-```
-
-## 🔧 Environment Variables
-
-### Frontend
-Create a `.env` file in the `frontend` folder (optional if running locally on default ports):
-```env
-VITE_BACKEND_URL=http://localhost:5000
-```
-
-### Backend
-You can configure the port in the `server.js` or via environment variables:
-```env
-PORT=5000
+# Application available at http://localhost:5173
 ```
 
 ## 🖥️ Usage
 
-1.  Open the frontend URL in your browser.
-2.  Enter a **Room ID** and your **Username** to join or create a room.
-3.  Share the Room ID with collaborators.
-4.  Write code in the editor, and see changes update instantly on all connected clients.
-5.  Use the **Video Dock** to collaborate face-to-face.
-6.  Click **Run** to execute the code and view the output.
+1.  Open the frontend application in your browser.
+2.  Enter a unique **Room ID**, **Username**, and your **Email** (for avatar generation) to join.
+3.  Share the Room ID with your peers.
+4.  **Code Together**: Type in the editor and watch changes sync instantly.
+5.  **Talk Together**: Use the draggable Video Dock to see and hear your teammates.
+6.  **Run Code**: Click the "Run" button to compile and execute your code in a secure container.
 
 ## 🛡️ Security
 
-Code execution is handled via **Docker** containers. Each execution request spins up a temporary container with resource limits (CPU, Memory) and mounts the code as a volume. The container is removed immediately after execution to prevent resource leaks and ensure isolation.
+Code execution is sandboxed using **Docker** containers.
+-   Each run request spawns a temporary, isolated container.
+-   Resource limits (CPU, Memory) are applied to prevent abuse.
+-   Containers are automatically destroyed after execution.
 
 ## 🤝 Contributing
 

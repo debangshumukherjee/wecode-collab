@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
 import ACTIONS from "../Actions";
 import Client from "../components/Client";
@@ -23,7 +23,6 @@ const EditorPage = () => {
   const username = location.state?.username || "Guest";
   const email = location.state?.email || "guest@example.com";
 
-  // --- WeCode State ---
   const [clients, setClients] = useState([]);
   const [output, setOutput] = useState("");
   const [input, setInput] = useState("");
@@ -32,51 +31,31 @@ const EditorPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [activeTab, setActiveTab] = useState("editor");
-
-  // --- WebRTC Video State ---
-  const [myStream, setMyStream] = useState(null);
-  const [remoteStreams, setRemoteStreams] = useState({});
-  const [remoteUsersInfo, setRemoteUsersInfo] = useState({});
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
-
-  const peersRef = useRef({});
-  const myStreamRef = useRef();
-
-  // WebRTC: Create a Peer Connection
-  const createPeer = useCallback((targetSocketId, socket) => {
-    const peer = new RTCPeerConnection({
-      iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
-    });
-    if (myStreamRef.current)
-      myStreamRef.current
-        .getTracks()
-        .forEach((t) => peer.addTrack(t, myStreamRef.current));
-
-    peer.onicecandidate = (event) => {
-      if (event.candidate)
-        socket.emit("ice:candidate", {
-          to: targetSocketId,
-          candidate: event.candidate,
-        });
-    };
-
-    peer.ontrack = (event) => {
-      setRemoteStreams((prev) => ({
-        ...prev,
-        [targetSocketId]: event.streams[0],
-      }));
-    };
-
-    peersRef.current[targetSocketId] = peer;
-    return peer;
-  }, []);
+  const [videoToken, setVideoToken] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
 
+    // 1. Fetch LiveKit Video Token
+    const fetchToken = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}/get-video-token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomName: roomId, email, participantName: username }),
+        });
+        const data = await response.json();
+
+        if (isMounted) setVideoToken(data.token);
+      } catch (error) {
+        toast.error("Failed to connect to video server");
+      }
+    };
+    
+    if (username && roomId) fetchToken();
+
+    // 2. Initialize WeCode Code Sync Socket
     const init = async () => {
-      // 1. Initialize Socket
       socketRef.current = initSocket();
       const socket = socketRef.current;
 
@@ -84,170 +63,41 @@ const EditorPage = () => {
       socket.on("connect_failed", (err) => handleErrors(err));
 
       function handleErrors(e) {
-        console.log("socket error", e);
         toast.error("Socket connection failed, try again later.");
         reactNavigator("/");
       }
 
-      // ==========================================
-      // A. START WECODE CODE LOGIC
-      // ==========================================
-      socket.emit(ACTIONS.JOIN, { roomId, username });
+      socket.on("join_error", ({ message }) => {
+        toast.error(message);
+        reactNavigator("/");
+      });
 
-      socket.on(
-        ACTIONS.JOINED,
-        ({ clients, username: joinedName, socketId }) => {
-          if (joinedName !== username) {
-            toast.success(`${joinedName} joined the code room.`);
-          }
-          setClients(clients);
-          socket.emit(ACTIONS.SYNC_CODE, { code: codeRef.current, socketId });
-        },
-      );
+      socket.emit(ACTIONS.JOIN, { roomId, email, username });
+
+      socket.on(ACTIONS.JOINED, ({ clients, username: joinedName, socketId }) => {
+        if (socketId !== socketRef.current.id) toast.success(`${joinedName} joined the room.`);
+        setClients(clients);
+        socket.emit(ACTIONS.SYNC_CODE, { code: codeRef.current, socketId });
+      });
 
       socket.on(ACTIONS.DISCONNECTED, ({ socketId, username: leftName }) => {
         toast.success(`${leftName} left the room.`);
-        setClients((prev) =>
-          prev.filter((client) => client.socketId !== socketId),
-        );
-      });
-
-      // ==========================================
-      // B. START WEBRTC VIDEO LOGIC
-      // ==========================================
-      try {
-        // Request Camera & Mic
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: true,
-        });
-        if (!isMounted) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        setMyStream(stream);
-        myStreamRef.current = stream;
-      } catch (err) {
-        console.warn("Camera access denied or no camera found.", err);
-        toast.error(
-          "Camera/Mic not found or permission denied. You joined as audio/video off.",
-        );
-      }
-
-      // Join Video Room
-      socket.emit("room:join", { email, room: roomId });
-
-      // Listeners for WebRTC
-      socket.on("all:users", async (users) => {
-        const usersInfoObj = {};
-        for (const user of users) {
-          usersInfoObj[user.id] = {
-            email: user.email,
-            isAudioMuted: user.isAudioMuted,
-            isVideoOff: user.isVideoOff,
-          };
-          const peer = createPeer(user.id, socket);
-          const offer = await peer.createOffer();
-          await peer.setLocalDescription(offer);
-          socket.emit("user:call", { to: user.id, offer });
-        }
-        setRemoteUsersInfo(usersInfoObj);
-      });
-
-      socket.on("user:joined", (user) => {
-        toast.success(`${user.email} joined video call`, { icon: "📹" });
-        setRemoteUsersInfo((prev) => ({ ...prev, [user.id]: user }));
-      });
-
-      socket.on("user:toggled-media", ({ id, type, state }) => {
-        setRemoteUsersInfo((prev) => ({
-          ...prev,
-          [id]: { ...prev[id], [type]: state },
-        }));
-      });
-
-      socket.on("incomming:call", async ({ from, offer }) => {
-        let peer = peersRef.current[from] || createPeer(from, socket);
-        await peer.setRemoteDescription(new RTCSessionDescription(offer));
-        const ans = await peer.createAnswer();
-        await peer.setLocalDescription(ans);
-        socket.emit("call:accepted", { to: from, ans });
-      });
-
-      socket.on("call:accepted", async ({ from, ans }) => {
-        if (peersRef.current[from])
-          await peersRef.current[from].setRemoteDescription(
-            new RTCSessionDescription(ans),
-          );
-      });
-
-      socket.on("ice:candidate", async ({ from, candidate }) => {
-        if (peersRef.current[from])
-          await peersRef.current[from].addIceCandidate(
-            new RTCIceCandidate(candidate),
-          );
-      });
-
-      socket.on("user:left", (socketId) => {
-        if (peersRef.current[socketId]) {
-          peersRef.current[socketId].close();
-          delete peersRef.current[socketId];
-        }
-        setRemoteStreams((prev) => {
-          const s = { ...prev };
-          delete s[socketId];
-          return s;
-        });
-        setRemoteUsersInfo((prev) => {
-          const s = { ...prev };
-          delete s[socketId];
-          return s;
-        });
+        setClients((prev) => prev.filter((client) => client.socketId !== socketId));
       });
     };
-
+    
     if (username) init();
 
-    // CLEANUP
     return () => {
       isMounted = false;
-      if (myStreamRef.current)
-        myStreamRef.current.getTracks().forEach((track) => track.stop());
-      Object.values(peersRef.current).forEach((peer) => peer.close());
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current.off(ACTIONS.JOINED);
         socketRef.current.off(ACTIONS.DISCONNECTED);
+        socketRef.current.off("join_error");
       }
     };
   }, []);
-
-  // --- WebRTC Controls ---
-  const toggleAudio = () => {
-    if (myStreamRef.current) {
-      myStreamRef.current
-        .getAudioTracks()
-        .forEach((track) => (track.enabled = !track.enabled));
-      setIsAudioMuted(!isAudioMuted);
-      socketRef.current.emit("user:toggle-media", {
-        type: "isAudioMuted",
-        state: !isAudioMuted,
-      });
-    }
-  };
-
-  const toggleVideo = () => {
-    if (myStreamRef.current) {
-      myStreamRef.current
-        .getVideoTracks()
-        .forEach((track) => (track.enabled = !track.enabled));
-      setIsVideoOff(!isVideoOff);
-      socketRef.current.emit("user:toggle-media", {
-        type: "isVideoOff",
-        state: !isVideoOff,
-      });
-    }
-  };
 
   // --- Code Execution ---
   const runCode = async () => {
@@ -262,7 +112,7 @@ const EditorPage = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code: codeRef.current, language, input }),
-        },
+        }
       );
 
       const data = await response.json();
@@ -295,37 +145,30 @@ const EditorPage = () => {
   return (
     <div className="flex h-dvh overflow-hidden bg-[#0f111a] text-[#e0e0e0] font-sans relative">
       
-      {/* --- INJECT THE NEW VIDEO DOCK COMPONENT HERE --- */}
-      <VideoDock
-        myStream={myStream}
-        remoteStreams={remoteStreams}
-        remoteUsersInfo={remoteUsersInfo}
-        email={email}
-        isAudioMuted={isAudioMuted}
-        isVideoOff={isVideoOff}
-        toggleAudio={toggleAudio}
-        toggleVideo={toggleVideo}
-      />
+      {/* Video Dock */}
+      <VideoDock token={videoToken} />
 
       {/* Mobile Sidebar Toggle */}
-      <div
-        className="md:hidden fixed top-3 left-3 z-50 p-2 bg-[#1a1d2d] rounded-lg border border-[#2b3040] shadow-lg cursor-pointer hover:bg-[#2b3040]"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        <svg
-          className="w-5 h-5 text-white"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      {!isSidebarOpen && (
+        <div
+          className="md:hidden fixed top-3 left-3 z-50 p-2 bg-[#1a1d2d] rounded-lg border border-[#2b3040] shadow-lg cursor-pointer hover:bg-[#2b3040] transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(true)}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 6h16M4 12h16M4 18h16"
-          />
-        </svg>
-      </div>
+          <svg
+            className="w-5 h-5 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </div>
+      )}
 
       {/* SIDEBAR */}
       <div
@@ -334,9 +177,6 @@ const EditorPage = () => {
         <div className="p-4 border-b border-[#2b3040] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <img src="/wecode.png" alt="logo" className="h-6" />
-            <span className="font-bold text-lg tracking-wide text-white">
-              WeCode
-            </span>
           </div>
           <button
             className="md:hidden text-gray-400"
@@ -352,7 +192,7 @@ const EditorPage = () => {
           </h3>
           <div className="flex flex-col gap-3">
             {clients.map((client) => (
-              <Client key={client.socketId} username={client.username} />
+              <Client key={client.socketId} username={client.socketId === socketRef.current.id ? `${client.username}(You)`: client.username} />
             ))}
           </div>
         </div>

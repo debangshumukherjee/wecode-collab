@@ -4,7 +4,6 @@ const path = require("path");
 
 const OUTPUT_DIR = path.join(__dirname, "tmp");
 
-// Ensure the tmp directory exists
 if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
@@ -14,21 +13,16 @@ const executeCode = async (language, code, input) => {
     const jobDir = path.join(OUTPUT_DIR, jobId);
 
     try {
-        // 1. Create a unique directory for this job
         await fs.promises.mkdir(jobDir, { recursive: true });
 
-        // 2. Write the Input File
         const inputFilePath = path.join(jobDir, "input.txt");
         await fs.promises.writeFile(inputFilePath, input || "", "utf8");
 
         let codeFilePath;
         let dockerCommand;
         
-        // Fix path for Docker on Windows (escaped backslashes)
-        // We use absolute path for volume mounting
         const volumePath = jobDir.replace(/\\/g, "/"); 
 
-        // 3. Select Language & Docker Command
         switch (language) {
             case "javascript":
                 codeFilePath = path.join(jobDir, "userCode.js");
@@ -49,7 +43,6 @@ const executeCode = async (language, code, input) => {
                 break;
 
             case "java":
-                // Extract public class name or default to Main
                 const match = code.match(/public\s+class\s+(\w+)/);
                 const className = match ? match[1] : "Main";
                 codeFilePath = path.join(jobDir, `${className}.java`);
@@ -61,12 +54,10 @@ const executeCode = async (language, code, input) => {
                 throw new Error(`Unsupported language: ${language}`);
         }
 
-        // 4. Execute Docker Command
         return new Promise((resolve, reject) => {
             console.log(`Running job: ${jobId} (${language})`);
             
             exec(dockerCommand, async (error, stdout, stderr) => {
-                // Cleanup: Delete the temporary folder
                 try {
                     await fs.promises.rm(jobDir, { recursive: true, force: true });
                 } catch (cleanupErr) {
@@ -74,7 +65,6 @@ const executeCode = async (language, code, input) => {
                 }
 
                 if (error) {
-                    // Start simple: return stderr if it crashes
                     return resolve({ error: true, output: stderr || error.message });
                 }
                 resolve({ error: false, output: stdout });
@@ -82,7 +72,6 @@ const executeCode = async (language, code, input) => {
         });
 
     } catch (err) {
-        // Cleanup if setup fails
         try {
              await fs.promises.rm(jobDir, { recursive: true, force: true });
         } catch (e) {}

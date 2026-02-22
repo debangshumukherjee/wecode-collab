@@ -7,7 +7,6 @@ const Home = () => {
     const navigate = useNavigate();
     const [roomId, setRoomId] = useState('');
     const [username, setUsername] = useState('');
-    // NEW: Email state for Video Calling
     const [email, setEmail] = useState(''); 
 
     const createNewRoom = (e) => {
@@ -18,13 +17,11 @@ const Home = () => {
     };
 
     const joinRoom = () => {
-        // NEW: Check if email is filled out
         if (!roomId || !username || !email) {
             toast.error('Room ID, username & email are required');
             return;
         }
         navigate(`/editor/${roomId}`, {
-            // NEW: Pass email along with username to the editor
             state: { username, email }, 
         });
     };
@@ -79,7 +76,7 @@ const Home = () => {
                         />
                     </div>
 
-                    {/* NEW: Email Input Field */}
+                    {/* Email Input Field */}
                     <div className="group">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block tracking-wider">Email (For Video Call)</label>
                         <input
